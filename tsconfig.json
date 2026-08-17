@@ -1,4 +1,1 @@
-{
-  "compilerOptions":{"target":"ES2022","module":"CommonJS","moduleResolution":"Node","outDir":"dist","rootDir":".","strict":true,"esModuleInterop":true,"skipLibCheck":true},
-  "include":["src/**/*.ts","prisma/**/*.ts","tests/**/*.ts"]
-}
+{"compilerOptions":{"target":"ES2022","module":"CommonJS","moduleResolution":"Node","outDir":"dist","rootDir":".","strict":true,"esModuleInterop":true,"skipLibCheck":true},"include":["src/**/*.ts","prisma/**/*.ts","tests/**/*.ts"]}

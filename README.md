@@ -1,100 +1,74 @@
-# 🎮 GamePulse Live API
+# 🎮 Gaming DataForge API
 
-A real-time-oriented gaming & esports information API.
+Provider-driven gaming & esports API for live news, teams, players, matches, statistics and tournament leaderboards.
 
-## What is actually live?
+## Live provider architecture
 
-This project is designed so that **current data comes from a configured permitted/public/licensed provider**. It does NOT fake live data.
+This repository **does not fake live data**. It uses a provider adapter so you can plug in a real public/licensed provider you are permitted to access.
 
-- 📰 News: periodic RSS ingestion when enabled.
-- 🏆 EWC leaderboard: periodic provider sync when `EWC_PROVIDER_URL` is configured.
-- 🎯 Match results: synced after provider reports them.
-- ⚡ WebSocket: broadcasts `leaderboard:update`, `match:update`, and `news:new`.
-- 📊 Rankings: API recalculates ordering from stored current stats.
+```text
+Real provider → HttpEsportsProvider → Sync service → PostgreSQL
+                                           ↓
+                                    REST + Socket.IO
+```
 
-## Important
+### Configure
 
-There is no universal official public EWC API documented in this repository. Therefore the ZIP does not invent one. You must configure an actual provider that gives you permission to access the data.
+Copy `.env.example` to `.env` and set:
 
-The official EWC Resource Center provides official tournament resources and competitive operations information. Public tournament statistics can also be available from third-party esports databases, but their terms/API access must be respected.
+```env
+EWC_PROVIDER_URL=https://your-permitted-provider.example
+EWC_PROVIDER_KEY=your-key
+EWC_POLL_SECONDS=15
+```
 
-## Endpoints
+The adapter expects:
 
-`GET /health`
+- `GET /tournaments/ewc-2026/standings`
+- `GET /tournaments/ewc-2026/matches`
 
-`GET /api/v1/games`
+with `{ "data": [...] }` JSON responses. If a provider has a different schema, change only `src/providers/httpProvider.ts` or add another adapter implementing `EsportsProvider`.
 
-`GET /api/v1/teams?game=free-fire`
+## REST endpoints
 
-`GET /api/v1/players`
+- `GET /health`
+- `GET /api/v1/games`
+- `GET /api/v1/teams?game=free-fire`
+- `GET /api/v1/players`
+- `GET /api/v1/tournaments`
+- `GET /api/v1/matches?tournament=ewc-2026`
+- `GET /api/v1/leaderboard?tournament=ewc-2026`
+- `GET /api/v1/news`
+- `POST /api/v1/sync/ewc`
 
-`GET /api/v1/tournaments`
-
-`GET /api/v1/matches?tournament=ewc-2026`
-
-`GET /api/v1/leaderboard?tournament=ewc-2026`
-
-`GET /api/v1/news?game=free-fire`
-
-`POST /api/v1/sync/ewc`
-
-Protected endpoints require `x-api-key`.
+Protected routes use `x-api-key`.
 
 ## Realtime events
 
-Connect with Socket.IO and listen for:
+Socket.IO events:
 
 - `leaderboard:update`
 - `match:update`
 - `news:new`
 
-## Setup
-
-1. `npm install`
-2. Copy `.env.example` to `.env`
-3. Start PostgreSQL:
-   `docker compose up -d db`
-4. `npm run db:generate`
-5. `npx prisma migrate dev --name init`
-6. `npm run db:seed`
-7. `npm run dev`
-
-## Live provider
-
-Set:
-
-`EWC_PROVIDER_URL=https://your-permitted-provider.example`
-
-`EWC_PROVIDER_KEY=your-key`
-
-The provider adapter expects:
-
-`GET /tournaments/ewc-2026/standings`
-
-and
-
-`GET /tournaments/ewc-2026/matches`
-
-with JSON shaped like:
-
-`{ "data": [...] }`
-
-If your provider uses a different schema, modify `src/providers/httpProvider.ts`.
+When the provider reports new match results or standings, the sync service persists them and broadcasts updates.
 
 ## News
 
-Set:
+Set `NEWS_INGEST_ENABLED=true` and put permitted RSS feeds in `NEWS_FEEDS`. The service polls them and emits `news:new` for new items. Respect each feed's terms, attribution and reuse requirements.
 
-`NEWS_INGEST_ENABLED=true`
+## Run
 
-`NEWS_FEEDS=https://your-permitted-feed.xml`
+```bash
+npm install
+cp .env.example .env
+docker compose up -d db
+npm run db:generate
+npx prisma migrate dev --name init
+npm run db:seed
+npm run dev
+```
 
-Use only sources/feeds whose terms permit your intended API use and preserve source URLs/attribution.
+## Important
 
-## Docker
-
-`docker compose up --build`
-
-## No fake real-time data
-
-The repository intentionally ships only a small demo structure. It will not claim a leaderboard is live until a real provider is configured and successfully synced.
+A provider adapter is **not itself a data source**. You still need a real provider and permission/terms that allow the intended use. Do not put provider keys in GitHub; keep them in `.env` or deployment secrets.
