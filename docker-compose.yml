@@ -1,0 +1,22 @@
+services:
+  api:
+    build: .
+    ports: ["4000:4000"]
+    environment:
+      PORT: 4000
+      DATABASE_URL: postgresql://postgres:postgres@db:5432/gamepulse
+      API_KEY: change-me
+      EWC_PROVIDER_URL: ""
+      EWC_PROVIDER_KEY: ""
+      NEWS_INGEST_ENABLED: "false"
+    depends_on: [db]
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: gamepulse
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes: [gamepulse_data:/var/lib/postgresql/data]
+volumes:
+  gamepulse_data:
