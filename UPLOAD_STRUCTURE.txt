@@ -1,0 +1,15 @@
+UPLOAD THIS ENTIRE FOLDER CONTENT TO GITHUB ROOT.
+
+Required root structure:
+.github/
+prisma/
+src/
+tests/
+.env.example
+.gitignore
+Dockerfile
+docker-compose.yml
+LICENSE
+package.json
+README.md
+tsconfig.json

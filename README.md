@@ -1,63 +1,41 @@
 # 🎮 Gaming DataForge API
 
-Provider-driven gaming & esports API for live news, teams, players, matches, statistics and tournament leaderboards.
+A provider-driven real-time gaming & esports API for matches, teams, players, standings, statistics and news.
 
-## Live provider architecture
-
-This repository **does not fake live data**. It uses a provider adapter so you can plug in a real public/licensed provider you are permitted to access.
+## Architecture
 
 ```text
-Real provider → HttpEsportsProvider → Sync service → PostgreSQL
-                                           ↓
-                                    REST + Socket.IO
+Licensed/Public Data Provider
+          ↓
+Provider Adapter
+          ↓
+Polling / Sync Service
+          ↓
+PostgreSQL
+          ↓
+REST API + Socket.IO
 ```
 
-### Configure
+## Important
 
-Copy `.env.example` to `.env` and set:
+This project does **not** invent live data. Configure a permitted provider in `.env`.
+
+### Provider configuration
 
 ```env
-EWC_PROVIDER_URL=https://your-permitted-provider.example
-EWC_PROVIDER_KEY=your-key
-EWC_POLL_SECONDS=15
+PROVIDER_URL=https://your-permitted-provider.example
+PROVIDER_KEY=your-key
+POLL_SECONDS=30
 ```
 
-The adapter expects:
+The adapter expects these endpoints:
 
-- `GET /tournaments/ewc-2026/standings`
-- `GET /tournaments/ewc-2026/matches`
+- `GET /tournaments/{slug}/standings`
+- `GET /tournaments/{slug}/matches`
 
-with `{ "data": [...] }` JSON responses. If a provider has a different schema, change only `src/providers/httpProvider.ts` or add another adapter implementing `EsportsProvider`.
+The provider response should contain a JSON object with a `data` array. Adapt `src/providers/httpProvider.ts` if your provider uses another schema.
 
-## REST endpoints
-
-- `GET /health`
-- `GET /api/v1/games`
-- `GET /api/v1/teams?game=free-fire`
-- `GET /api/v1/players`
-- `GET /api/v1/tournaments`
-- `GET /api/v1/matches?tournament=ewc-2026`
-- `GET /api/v1/leaderboard?tournament=ewc-2026`
-- `GET /api/v1/news`
-- `POST /api/v1/sync/ewc`
-
-Protected routes use `x-api-key`.
-
-## Realtime events
-
-Socket.IO events:
-
-- `leaderboard:update`
-- `match:update`
-- `news:new`
-
-When the provider reports new match results or standings, the sync service persists them and broadcasts updates.
-
-## News
-
-Set `NEWS_INGEST_ENABLED=true` and put permitted RSS feeds in `NEWS_FEEDS`. The service polls them and emits `news:new` for new items. Respect each feed's terms, attribution and reuse requirements.
-
-## Run
+## Run locally
 
 ```bash
 npm install
@@ -69,6 +47,20 @@ npm run db:seed
 npm run dev
 ```
 
-## Important
+API: `http://localhost:4000`
 
-A provider adapter is **not itself a data source**. You still need a real provider and permission/terms that allow the intended use. Do not put provider keys in GitHub; keep them in `.env` or deployment secrets.
+Health: `GET /health`
+
+Leaderboard: `GET /api/v1/leaderboard?tournament=ewc-2026`
+
+## Real-time events
+
+Socket.IO events:
+
+- `leaderboard:update`
+- `match:update`
+- `news:new`
+
+## Security
+
+Never commit `.env` or real API keys. Only commit `.env.example`.
